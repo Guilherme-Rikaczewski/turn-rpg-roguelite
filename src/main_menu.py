@@ -1,20 +1,33 @@
 from menu import Menu
-from pygame import Surface, SRCALPHA, BLEND_RGBA_MULT
+from pygame import Surface, SRCALPHA, BLEND_RGBA_MULT, quit
 from pygame.transform import smoothscale
 from pygame.draw import rect
 from pygame.rect import Rect
 from pygame.font import Font
-from enviroments import MAIN_MENU_FONT
+from pygame.mixer import Sound
+from enviroments import MAIN_MENU_FONT, MAIN_MENU_HOVER_SOUND
 
 
 class MainMenu(Menu):
     def __init__(self, screen):
         super().__init__(screen)
-        self.hover_color = (0, 0, 0, 0)
+        self.border_color = (0, 0, 0, 0)
+        self.hover_sound = Sound(MAIN_MENU_HOVER_SOUND)
+        self.hover_state = [False, False, False]
+
+    def handle_click(self, text):
+
+        match text:
+            case 'JOGAR':
+                pass
+            case 'CONFIGURAR':
+                pass
+            case 'SAIR':
+                quit()
 
     def draw_panel(self):
         width = 400
-        height = 400
+        height = 260
         panel_x = 30
         panel_y = self.screen.get_height() - height - 30
 
@@ -55,10 +68,10 @@ class MainMenu(Menu):
                         (panel_x, panel_y, width, height),
                         width=3, border_radius=radius)
 
-    def draw_options(self, mouse_pos):
+    def draw_options(self, mouse_pos, click):
         # mesmas posições do painel
         width = 400
-        height = 400
+        height = 280
         panel_x = 30
         panel_y = self.screen.get_height() - height - 30
 
@@ -74,7 +87,7 @@ class MainMenu(Menu):
         # calculo posição inicial (para começar no topo do painel)
         start_y = panel_y + 40
 
-        radius = 12
+        radius = 10
 
         for i, text in enumerate(self.options):
             bx = panel_x + 20
@@ -88,7 +101,19 @@ class MainMenu(Menu):
             
             is_hover = option_rect.collidepoint(mouse_pos)
 
-            self.hover_color = (239, 153, 34, 255) if is_hover else (0, 0, 0, 0)
+            # som do hover
+            if is_hover and not self.hover_state[i]:
+                self.hover_sound.play()
+            
+            self.hover_state[i] = is_hover
+
+            # clique na opção
+            if is_hover and click:
+                self.handle_click(text)
+
+            self.border_color = (239, 153, 34, 255) if is_hover else (
+                0, 0, 0, 0
+                )
             
             rect(
                 rect_surface,
@@ -100,14 +125,14 @@ class MainMenu(Menu):
             # borda
             rect(
                 rect_surface,
-                self.hover_color,   # cor da borda
+                self.border_color,   # cor da borda
                 (0, 0, button_width, button_height),
                 width=2,
                 border_radius=radius
             )
 
             # render texto
-            rendered = font.render(text, True, (239, 153, 34,))
+            rendered = font.render(text, True, (239, 153, 34))
             text_rect = rendered.get_rect(
                 center=(button_width // 2, button_height // 2)
             )
@@ -117,6 +142,6 @@ class MainMenu(Menu):
             # desenhar o botão na tela
             self.screen.blit(rect_surface, (bx, by))
 
-    def draw(self, mouse_pos):
+    def draw(self, mouse_pos, click):
         self.draw_panel()
-        self.draw_options(mouse_pos)
+        self.draw_options(mouse_pos, click)
