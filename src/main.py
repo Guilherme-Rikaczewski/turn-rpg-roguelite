@@ -1,6 +1,7 @@
 import pygame
 from main_menu import MainMenu
-from enviroments import MAIN_MENU_BACKGROUND
+from video_screen import VideoScreen
+from enviroments import MAIN_MENU_BACKGROUND, INTRO_VIDEO
 
 # pygame setup
 pygame.init()
@@ -8,9 +9,12 @@ screen = pygame.display.set_mode((1353, 893))
 clock = pygame.time.Clock()
 running = True
 
+currrent_screen = "menu"
+
 menu = MainMenu(screen)
 menu.set_background(MAIN_MENU_BACKGROUND)
 
+video: VideoScreen = None
 
 while running:
 
@@ -26,11 +30,17 @@ while running:
 
     mouse_cursor = pygame.mouse.get_pos()
 
-    # fill the screen with a color to wipe away anything from last frame
-    menu.draw_background()
-    menu.draw(mouse_cursor, click)
+    match currrent_screen:
+        case 'menu':
+            menu.draw_background()
+            menu.draw(mouse_cursor, click)
 
-    # RENDER YOUR GAME HERE
+            if menu.finished:
+                menu.turn_black()
+                video = VideoScreen(screen, INTRO_VIDEO)
+                currrent_screen = 'video'
+        case 'video':
+            video.draw()
 
     # flip() the display to put your work on screen
     pygame.display.flip()

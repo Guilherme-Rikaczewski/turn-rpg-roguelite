@@ -5,7 +5,9 @@ from pygame.draw import rect
 from pygame.rect import Rect
 from pygame.font import Font
 from pygame.mixer import Sound
-from enviroments import MAIN_MENU_FONT, MAIN_MENU_HOVER_SOUND
+from pygame.mixer_music import set_volume, play, load, stop
+from enviroments import (MAIN_MENU_FONT, MAIN_MENU_HOVER_SOUND, 
+                         MAIN_MENU_CLICK_SOUND, MAIN_MENU_THEME)
 
 
 class MainMenu(Menu):
@@ -14,16 +16,76 @@ class MainMenu(Menu):
         self.border_color = (0, 0, 0, 0)
         self.hover_sound = Sound(MAIN_MENU_HOVER_SOUND)
         self.hover_state = [False, False, False]
+        self.click_sound = Sound(MAIN_MENU_CLICK_SOUND)
+        
+        load(MAIN_MENU_THEME)
+        set_volume(0.0)
+        play(-1)
+
+        self.music_volume = 0.0
+        self.target_volume = 0.5
+        self.fade_speed = 0.01
+
+        # muda pra True quando clicar pra ir pra outra tela
+        self.should_fade_out = False
+
+        self.visual_alpha = 0        # 0 = visível, 255 = preto total
+        self.visual_fading = False   # vira True quando clicar JOGAR
+        self.visual_speed = 4        # velocidade do fade
+        self.finished = False        # usado para avisar à main() que pode trocar de tela
 
     def handle_click(self, text):
 
         match text:
             case 'JOGAR':
-                pass
+                self.should_fade_out = True
+                self.click_sound.play()
+                self.visual_fading = True
             case 'CONFIGURAR':
-                pass
+                self.should_fade_out = True
+                self.click_sound.play()
             case 'SAIR':
+                self.click_sound.play()
                 quit()
+
+    def update_visual_fade(self):
+        if self.visual_fading:
+            if self.visual_alpha < 255:
+                self.visual_alpha = min(
+                    self.visual_alpha + self.visual_speed, 255
+                )
+
+                fade_surface = Surface(self.screen.get_size(), SRCALPHA)
+                fade_surface.fill((0, 0, 0, self.visual_alpha))
+                self.screen.blit(fade_surface, (0, 0))
+
+            else:
+                # fade completo → troca a tela
+                self.finished = True
+
+    def turn_black(self):
+        surf = Surface(self.screen.get_size(), SRCALPHA)
+        surf.fill((0, 0, 0, 255))
+        self.screen.blit(
+            surf,
+            (0, 0)
+        )
+
+    def update_music(self):
+        if not self.should_fade_out:
+            if self.music_volume < self.target_volume:
+                self.music_volume = min(
+                    self.music_volume + self.fade_speed, self.target_volume
+                )
+                set_volume(self.music_volume)
+        else:
+            if self.music_volume > 0:
+                self.music_volume = max(
+                    self.music_volume - self.fade_speed, 0
+                )
+                set_volume(self.music_volume)
+            else:
+                stop()
 
     def draw_panel(self):
         width = 400
@@ -145,3 +207,5 @@ class MainMenu(Menu):
     def draw(self, mouse_pos, click):
         self.draw_panel()
         self.draw_options(mouse_pos, click)
+        self.update_music()
+        self.update_visual_fade()
