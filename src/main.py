@@ -14,8 +14,6 @@ currrent_screen = "menu"
 menu = MainMenu(screen)
 menu.set_background(MAIN_MENU_BACKGROUND)
 
-video: VideoScreen = None
-
 while running:
 
     click = False
@@ -35,11 +33,11 @@ while running:
             menu.draw(mouse_cursor, click)
 
             if menu.finished:
-                # menu.turn_black()
-                video = VideoScreen(screen, INTRO_VIDEO)
                 currrent_screen = 'video'
         case 'video':
-            video.draw()
+            menu.video.draw()
+            menu.chose_character()
+
 
     # flip() the display to put your work on screen
     pygame.display.flip()

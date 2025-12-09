@@ -7,12 +7,16 @@ from pygame.mixer import Sound
 from video_screen import VideoScreen
 from pygame.mixer_music import set_volume, play, load, stop
 from enviroments import (MAIN_MENU_FONT, MAIN_MENU_HOVER_SOUND, 
-                         MAIN_MENU_CLICK_SOUND, MAIN_MENU_THEME)
+                         MAIN_MENU_CLICK_SOUND, MAIN_MENU_THEME,
+                         INTRO_VIDEO)
 
 
 class MainMenu():
     def __init__(self, screen):
         self.screen = screen
+
+        self.video = VideoScreen(screen, INTRO_VIDEO)
+
         self.options = None
         self.background = None
         self.border_color = (0, 0, 0, 0)
@@ -38,7 +42,6 @@ class MainMenu():
 
         self.hide_options = False
 
-        self.show_text = True
         self.intro_text = ['A viagem foi longa', 'Já está anoitecendo', 'É melhor descansar']
         self.intro_alpha = 0
         self.intro_fading = True
@@ -46,6 +49,17 @@ class MainMenu():
 
         self.intro = False
         self.frame_count = 0
+
+        self.chose_on = False
+        self.chose_alpha = 0
+        self.chose_fading = True
+        self.chose_speed = 2
+
+        self.chose_y_offset = 0        # posição inicial (0 = centro)
+        self.chose_slide = False       # começa a deslizar?
+        self.chose_slide_speed = 32     # velocidade base
+
+
 
     def set_background(self, path):
         self.background = VideoScreen(self.screen, path)
@@ -59,7 +73,7 @@ class MainMenu():
                 self.hide_options = True
                 self.intro = True
             case 'CONFIGURAR':
-                self.should_fade_out = True
+                # self.should_fade_out = True
                 self.click_sound.play()
             case 'SAIR':
                 self.click_sound.play()
@@ -68,13 +82,9 @@ class MainMenu():
     def init_intro(self):
         if not self.intro:
             return
-        
-        if not self.show_text:
-            self.visual_fading = True
-            return
 
         # --- SE A LISTA ACABOU, COMEÇA O FADE OUT --- #
-        if not self.intro_text:  
+        if not self.intro_text:
             self.visual_fading = True
             return
 
@@ -111,8 +121,7 @@ class MainMenu():
         temp_surface.fill(
             (255, 255, 255, self.intro_alpha),
             special_flags=BLEND_RGBA_MULT
-        )
-        
+        )   
 
         # Desenha texto
         self.screen.blit(temp_surface, text_rect)
@@ -128,6 +137,53 @@ class MainMenu():
             else:
                 # acabou tudo → fade da tela
                 self.visual_fading = True
+                # self.should_fade_out = True
+
+    def chose_character(self):
+        if not self.chose_on:
+            return
+
+        font = Font(MAIN_MENU_FONT, 64)
+        text = "Quem está dormindo?"
+
+        rendered = font.render(text, True, (255, 255, 255))
+
+        # posição do centro da tela + offset animado
+        base_x = self.screen.get_width() // 2
+        base_y = self.screen.get_height() // 2 + self.chose_y_offset
+
+        text_rect = rendered.get_rect(center=(base_x, base_y))
+
+        # --- FADE-IN DO TEXTO --- #
+        if not self.chose_slide:   # fade só antes de deslizar
+            if self.chose_fading:
+                self.chose_alpha = min(self.chose_alpha + self.chose_speed, 255)
+
+                if self.frame_count < 30:    # ~2s a 30fps
+                    self.frame_count += 1
+
+                if self.chose_alpha == 255 and self.frame_count == 30:
+                    self.frame_count = 0
+                    self.chose_fading = False
+                    self.chose_slide = True   # começa a deslizar
+
+        # --- ANIMAÇÃO DE DESLIZAR PARA CIMA --- #
+        if self.chose_slide:
+            # easing-out suave
+            self.chose_y_offset -= self.chose_slide_speed
+            self.chose_slide_speed *= 0.92   # velocidade diminui com o tempo
+
+            if self.chose_slide_speed < 0.5:
+                self.chose_slide_speed = 0
+
+        # --- APLICA O ALPHA --- #
+        temp = Surface(rendered.get_size(), SRCALPHA)
+        temp.blit(rendered, (0, 0))
+
+        temp.fill((255, 255, 255, self.chose_alpha), special_flags=BLEND_RGBA_MULT)
+
+        self.screen.blit(temp, text_rect)
+
 
     def update_visual_fade(self):
         if self.visual_fading:
@@ -152,6 +208,8 @@ class MainMenu():
             surf,
             (0, 0)
         )
+        self.frame_count = 0
+        self.chose_on = True
 
     def update_music(self):
         if not self.should_fade_out:
@@ -293,4 +351,4 @@ class MainMenu():
             self.draw_options(mouse_pos, click)
         self.update_music()
         self.init_intro()
-        # self.update_visual_fade()
+        self.update_visual_fade()
