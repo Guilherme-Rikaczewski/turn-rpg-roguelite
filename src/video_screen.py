@@ -46,7 +46,8 @@ class VideoScreen:
 
         self.screen.blit(surf, (0, 0))
 
-    def draw(self):
+    def draw(self, fade=True):
         self.update()
-        self.update_visual_fade()
+        if fade:
+            self.update_visual_fade()
 

@@ -1,18 +1,20 @@
-from menu import Menu
 from pygame import Surface, SRCALPHA, BLEND_RGBA_MULT, quit
 from pygame.transform import smoothscale
 from pygame.draw import rect
 from pygame.rect import Rect
 from pygame.font import Font
 from pygame.mixer import Sound
+from video_screen import VideoScreen
 from pygame.mixer_music import set_volume, play, load, stop
 from enviroments import (MAIN_MENU_FONT, MAIN_MENU_HOVER_SOUND, 
                          MAIN_MENU_CLICK_SOUND, MAIN_MENU_THEME)
 
 
-class MainMenu(Menu):
+class MainMenu():
     def __init__(self, screen):
-        super().__init__(screen)
+        self.screen = screen
+        self.options = None
+        self.background = None
         self.border_color = (0, 0, 0, 0)
         self.hover_sound = Sound(MAIN_MENU_HOVER_SOUND)
         self.hover_state = [False, False, False]
@@ -34,19 +36,98 @@ class MainMenu(Menu):
         self.visual_speed = 4        # velocidade do fade
         self.finished = False        # usado para avisar à main() que pode trocar de tela
 
+        self.hide_options = False
+
+        self.show_text = True
+        self.intro_text = ['A viagem foi longa', 'Já está anoitecendo', 'É melhor descansar']
+        self.intro_alpha = 0
+        self.intro_fading = True
+        self.intro_speed = 2
+
+        self.intro = False
+        self.frame_count = 0
+
+    def set_background(self, path):
+        self.background = VideoScreen(self.screen, path)
+
     def handle_click(self, text):
 
         match text:
             case 'JOGAR':
-                self.should_fade_out = True
+                # self.should_fade_out = True
                 self.click_sound.play()
-                self.visual_fading = True
+                self.hide_options = True
+                self.intro = True
             case 'CONFIGURAR':
                 self.should_fade_out = True
                 self.click_sound.play()
             case 'SAIR':
                 self.click_sound.play()
                 quit()
+
+    def init_intro(self):
+        if not self.intro:
+            return
+        
+        if not self.show_text:
+            self.visual_fading = True
+            return
+
+        # --- SE A LISTA ACABOU, COMEÇA O FADE OUT --- #
+        if not self.intro_text:  
+            self.visual_fading = True
+            return
+
+        # Fonte
+        font = Font(MAIN_MENU_FONT, 64)
+
+        # Texto atual (sempre o primeiro da lista)
+        current_text = self.intro_text[0]
+
+        # Render do texto atual
+        rendered = font.render(current_text, True, (255, 255, 255))
+        text_rect = rendered.get_rect(
+            center=(
+                self.screen.get_width() // 2,
+                self.screen.get_height() // 2
+            )
+        )
+
+        # Fade-in do texto
+        if self.intro_fading:
+            self.intro_alpha = min(self.intro_alpha + self.intro_speed, 255)
+            
+            if self.frame_count < 120:
+                self.frame_count += 1
+            if self.intro_alpha == 255 and self.frame_count == 120:
+                self.frame_count = 0
+                self.intro_fading = False  # fim do fade
+
+        # Surface temporária
+        temp_surface = Surface(rendered.get_size(), SRCALPHA)
+        temp_surface.blit(rendered, (0, 0))
+
+        # Aplica alpha gradual
+        temp_surface.fill(
+            (255, 255, 255, self.intro_alpha),
+            special_flags=BLEND_RGBA_MULT
+        )
+        
+
+        # Desenha texto
+        self.screen.blit(temp_surface, text_rect)
+
+        # Quando terminar o fade-in, troca para o próximo texto
+        if not self.intro_fading:
+            self.intro_text.pop(0)   # remove o primeiro texto
+
+            # Se ainda tem texto → prepara próximo
+            if self.intro_text:
+                self.intro_alpha = 0
+                self.intro_fading = True
+            else:
+                # acabou tudo → fade da tela
+                self.visual_fading = True
 
     def update_visual_fade(self):
         if self.visual_fading:
@@ -62,6 +143,7 @@ class MainMenu(Menu):
             else:
                 # fade completo → troca a tela
                 self.finished = True
+                self.turn_black()
 
     def turn_black(self):
         surf = Surface(self.screen.get_size(), SRCALPHA)
@@ -205,7 +287,10 @@ class MainMenu(Menu):
             self.screen.blit(rect_surface, (bx, by))
 
     def draw(self, mouse_pos, click):
-        self.draw_panel()
-        self.draw_options(mouse_pos, click)
+        self.background.draw(fade=False)
+        if not self.hide_options:
+            self.draw_panel()
+            self.draw_options(mouse_pos, click)
         self.update_music()
-        self.update_visual_fade()
+        self.init_intro()
+        # self.update_visual_fade()
