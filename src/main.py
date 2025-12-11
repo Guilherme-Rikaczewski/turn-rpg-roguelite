@@ -33,8 +33,8 @@ while running:
             menu.draw(mouse_cursor, click)
 
             if menu.finished:
-                currrent_screen = 'video'
-        case 'video':
+                currrent_screen = 'intro'
+        case 'intro':
             menu.video.draw()
             menu.chose_character()
 

@@ -42,7 +42,8 @@ class MainMenu():
 
         self.hide_options = False
 
-        self.intro_text = ['A viagem foi longa', 'Já está anoitecendo', 'É melhor descansar']
+        # self.intro_text = ['A viagem foi longa', 'Já está anoitecendo', 'É melhor descansar']
+        self.intro_text = []  # versao para teste mais rapido
         self.intro_alpha = 0
         self.intro_fading = True
         self.intro_speed = 2
@@ -58,6 +59,11 @@ class MainMenu():
         self.chose_y_offset = 0        # posição inicial (0 = centro)
         self.chose_slide = False       # começa a deslizar?
         self.chose_slide_speed = 32     # velocidade base
+
+        self.panel_y_offset = 100   # começa 200px abaixo da posição final
+        self.panel_target_offset = -1000  # ponto final da animação
+        self.panel_slide_speed = 32
+        self.panel_sliding = False   # só começa quando você quiser
 
 
 
@@ -170,9 +176,51 @@ class MainMenu():
         # --- ANIMAÇÃO DE DESLIZAR PARA CIMA --- #
         if self.chose_slide:
             # easing-out suave
+            # OBS: não zere a velocidade imediatamente — deixe o easing diminuir
             self.chose_y_offset -= self.chose_slide_speed
             self.chose_slide_speed *= 0.92   # velocidade diminui com o tempo
 
+            # quando a velocidade cair abaixo do gatilho, inicia a animação do painel
+            # (isso evita chamar show_character() a cada frame e garante que o painel inicie só uma vez)
+            if self.chose_slide_speed < 8:
+                # inicia o slide do painel
+                self.show_panel(
+                    panel_id="painel1",
+                    final_x=30,
+                    final_y=100,
+                    width=400,
+                    height=200,
+                    start_speed=80,
+                    start_offset=0
+                )
+                # self.panel_sliding = True
+                # opcional: resetar offsets/velocidade caso queira comportamento consistente
+                # self.panel_y_offset = 200
+                # self.panel_slide_speed = 20
+            
+            if self.chose_slide_speed < 7:
+                self.show_panel(
+                    panel_id="painel2",
+                    final_x=30,
+                    final_y=350,
+                    width=400,
+                    height=200,
+                    start_speed=62,  # 18 de velocidade de diferença
+                    start_offset=0
+                )
+
+            if self.chose_slide_speed < 6:
+                self.show_panel(
+                    panel_id="painel3",
+                    final_x=30,
+                    final_y=350,
+                    width=400,
+                    height=200,
+                    start_speed=44,
+                    start_offset=0
+                )
+
+            # evita vel neg/bug
             if self.chose_slide_speed < 0.5:
                 self.chose_slide_speed = 0
 
@@ -183,6 +231,132 @@ class MainMenu():
         temp.fill((255, 255, 255, self.chose_alpha), special_flags=BLEND_RGBA_MULT)
 
         self.screen.blit(temp, text_rect)
+
+        # se o painel já iniciou sliding, desenha-o também aqui (ou você pode desenhar em outro lugar)
+        # chamar aqui garante ordem: texto (acima) e painel (abaixo) chegando do chão
+
+    def show_panel(self, panel_id, final_x, final_y, width, height,
+               start_speed=32, start_offset=0, radius=15):
+        """
+        Painel com animação 'liquid glass' vindo de fora da tela (por baixo).
+
+        panel_id     → nome único do painel
+        final_x/y    → posição final do painel
+        width/height → tamanho do painel
+        start_speed  → velocidade inicial do slide
+        start_offset → distância EXTRA abaixo da borda inferior da tela para ele começar
+        radius       → bordas arredondadas
+        """
+
+        screen_w, screen_h = self.screen.get_size()
+
+        # Se não existe dict de estados, cria
+        if not hasattr(self, "panel_states"):
+            self.panel_states = {}
+
+        # posição inicial REAL: fora da tela + offset adicional
+        start_y = (screen_h + height) + start_offset
+
+        # cria estado para esse painel se ele ainda não existe
+        if panel_id not in self.panel_states:
+            self.panel_states[panel_id] = {
+                "y": start_y,
+                "speed": start_speed,
+                "sliding": True,
+                "done": False
+            }
+
+        p = self.panel_states[panel_id]
+
+        # ======================
+        #   ANIMAÇÃO EASING OUT
+        # ======================
+        if p["sliding"]:
+            p["y"] -= p["speed"]
+            p["speed"] *= 0.92  # easing-out
+
+            if p["y"] <= final_y:
+                p["y"] = final_y
+                p["speed"] = 0
+                p["sliding"] = False
+                p["done"] = True
+
+        panel_y = p["y"]
+
+        # Se ainda está fora da tela, não desenha
+        if panel_y > screen_h:
+            return
+
+        # ======================
+        #     RECORTE DE FUNDO
+        # ======================
+        vis_x = final_x
+        vis_y = max(panel_y, 0)
+        vis_h = min(panel_y + height, screen_h) - vis_y
+
+        if vis_h <= 0:
+            return
+
+        try:
+            background_area = self.screen.subsurface((vis_x, vis_y, width, vis_h)).copy().convert_alpha()
+        except ValueError:
+            return
+
+        # se o painel está parcialmente fora da tela, preenche o restante
+        if vis_h != height:
+            tmp_full = Surface((width, height), SRCALPHA)
+            tmp_full.fill((0, 0, 0, 0))
+
+            # cola no topo ou no bottom dependendo de onde cortou
+            dest_y = 0 if panel_y < 0 else height - vis_h
+
+            scaled = smoothscale(background_area, (width, vis_h)).convert_alpha()
+            tmp_full.blit(scaled, (0, dest_y))
+            background_area = tmp_full
+
+        # ======================
+        #       BLUR
+        # ======================
+        scale = 0.25
+        blurred = background_area
+        for _ in range(4):
+            small = smoothscale(
+                blurred, (max(1, int(width * scale)), max(1, int(height * scale)))
+            )
+            blurred = smoothscale(small, (width, height)).convert_alpha()
+
+        # ======================
+        #       MÁSCARA
+        # ======================
+        mask = Surface((width, height), SRCALPHA)
+        mask.fill((0, 0, 0, 0))
+        rect(mask, (127, 15, 14, 255), (0, 0, width, height), border_radius=radius)
+
+        final_surf = Surface((width, height), SRCALPHA)
+        final_surf.blit(blurred, (0, 0))
+        final_surf.blit(mask, (0, 0), special_flags=BLEND_RGBA_MULT)
+
+        # overlay escuro
+        overlay = Surface((width, height), SRCALPHA)
+        rect(overlay, (0, 0, 0, 90), (0, 0, width, height), border_radius=radius)
+
+        # ======================
+        #       RENDER FINAL
+        # ======================
+        self.screen.blit(final_surf, (final_x, panel_y))
+        self.screen.blit(overlay, (final_x, panel_y))
+
+        # borda
+        rect(
+            self.screen,
+            (239, 153, 34, 255),
+            (final_x, panel_y, width, height),
+            width=3,
+            border_radius=radius
+        )
+
+
+
 
 
     def update_visual_fade(self):
