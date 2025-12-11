@@ -182,7 +182,7 @@ class MainMenu():
 
             # quando a velocidade cair abaixo do gatilho, inicia a animação do painel
             # (isso evita chamar show_character() a cada frame e garante que o painel inicie só uma vez)
-            if self.chose_slide_speed < 8:
+            if self.chose_slide_speed < 11:
                 # inicia o slide do painel
                 self.show_panel(
                     panel_id="painel1",
@@ -198,9 +198,20 @@ class MainMenu():
                 # self.panel_y_offset = 200
                 # self.panel_slide_speed = 20
             
-            if self.chose_slide_speed < 7:
+            if self.chose_slide_speed < 10:
                 self.show_panel(
                     panel_id="painel2",
+                    final_x=450,
+                    final_y=100,
+                    width=400,
+                    height=200,
+                    start_speed=80,  # 18 de velocidade de diferença
+                    start_offset=0
+                )
+
+            if self.chose_slide_speed < 9:
+                self.show_panel(
+                    panel_id="painel3",
                     final_x=30,
                     final_y=350,
                     width=400,
@@ -209,10 +220,32 @@ class MainMenu():
                     start_offset=0
                 )
 
+            if self.chose_slide_speed < 8:
+                self.show_panel(
+                    panel_id="painel4",
+                    final_x=450,
+                    final_y=350,
+                    width=400,
+                    height=200,
+                    start_speed=62,  # 18 de velocidade de diferença
+                    start_offset=0
+                )
+
+            if self.chose_slide_speed < 7:
+                self.show_panel(
+                    panel_id="painel5",
+                    final_x=30,
+                    final_y=350,
+                    width=400,
+                    height=200,
+                    start_speed=44,
+                    start_offset=0
+                )
+
             if self.chose_slide_speed < 6:
                 self.show_panel(
-                    panel_id="painel3",
-                    final_x=30,
+                    panel_id="painel6",
+                    final_x=450,
                     final_y=350,
                     width=400,
                     height=200,
