@@ -65,6 +65,12 @@ class MainMenu():
         self.panel_slide_speed = 32
         self.panel_sliding = False   # só começa quando você quiser
 
+        self.already_hover = [
+            False, False,
+            False, False,
+            False, False
+        ]
+
 
 
     def set_background(self, path):
@@ -145,7 +151,7 @@ class MainMenu():
                 self.visual_fading = True
                 # self.should_fade_out = True
 
-    def chose_character(self):
+    def chose_character(self, muose_pos):
         if not self.chose_on:
             return
 
@@ -185,6 +191,7 @@ class MainMenu():
             if self.chose_slide_speed < 11:
                 # inicia o slide do painel
                 self.show_panel(
+                    muose_pos, 5,
                     panel_id="painel1",
                     final_x=30,
                     final_y=100,
@@ -200,6 +207,7 @@ class MainMenu():
             
             if self.chose_slide_speed < 10:
                 self.show_panel(
+                    muose_pos, 0,
                     panel_id="painel2",
                     final_x=450,
                     final_y=100,
@@ -211,6 +219,7 @@ class MainMenu():
 
             if self.chose_slide_speed < 9:
                 self.show_panel(
+                    muose_pos, 1,
                     panel_id="painel3",
                     final_x=30,
                     final_y=350,
@@ -222,6 +231,7 @@ class MainMenu():
 
             if self.chose_slide_speed < 8:
                 self.show_panel(
+                    muose_pos, 2,
                     panel_id="painel4",
                     final_x=450,
                     final_y=350,
@@ -233,6 +243,7 @@ class MainMenu():
 
             if self.chose_slide_speed < 7:
                 self.show_panel(
+                    muose_pos, 3,
                     panel_id="painel5",
                     final_x=30,
                     final_y=350,
@@ -244,12 +255,26 @@ class MainMenu():
 
             if self.chose_slide_speed < 6:
                 self.show_panel(
+                    muose_pos, 4,
                     panel_id="painel6",
                     final_x=450,
                     final_y=350,
                     width=400,
                     height=200,
                     start_speed=44,
+                    start_offset=0
+                )
+
+            if self.chose_slide_speed < 5:
+                # inicia o slide do painel
+                self.show_panel(
+                    muose_pos, 10,
+                    panel_id="painel7",
+                    final_x=890,
+                    final_y=100,
+                    width=1000,
+                    height=650,
+                    start_speed=116,
                     start_offset=0
                 )
 
@@ -268,7 +293,7 @@ class MainMenu():
         # se o painel já iniciou sliding, desenha-o também aqui (ou você pode desenhar em outro lugar)
         # chamar aqui garante ordem: texto (acima) e painel (abaixo) chegando do chão
 
-    def show_panel(self, panel_id, final_x, final_y, width, height,
+    def show_panel(self, mouse_pos, maskid, panel_id, final_x, final_y, width, height,
                start_speed=32, start_offset=0, radius=15):
         """
         Painel com animação 'liquid glass' vindo de fora da tela (por baixo).
@@ -363,7 +388,7 @@ class MainMenu():
         # ======================
         mask = Surface((width, height), SRCALPHA)
         mask.fill((0, 0, 0, 0))
-        rect(mask, (127, 15, 14, 255), (0, 0, width, height), border_radius=radius)
+        rect(mask, (126, 126, 126, 255), (0, 0, width, height), border_radius=radius)
 
         final_surf = Surface((width, height), SRCALPHA)
         final_surf.blit(blurred, (0, 0))
@@ -378,6 +403,21 @@ class MainMenu():
         # ======================
         self.screen.blit(final_surf, (final_x, panel_y))
         self.screen.blit(overlay, (final_x, panel_y))
+
+        option_rect = Rect(final_x, panel_y, width, height)
+        is_hover = option_rect.collidepoint(mouse_pos)
+        
+        # som do hover
+        if maskid < 6:
+            if is_hover and not self.already_hover[maskid]:
+                self.hover_sound.play()
+                self.already_hover[maskid] = True
+            
+            if not is_hover and self.already_hover[maskid]:
+                self.already_hover[maskid] = False
+            
+        # self.hover_state[i] = is_hover
+        
 
         # borda
         rect(

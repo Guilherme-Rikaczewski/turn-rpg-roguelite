@@ -36,7 +36,7 @@ while running:
                 currrent_screen = 'intro'
         case 'intro':
             menu.video.draw()
-            menu.chose_character()
+            menu.chose_character(mouse_cursor)
 
 
     # flip() the display to put your work on screen
