@@ -11,7 +11,7 @@ from pygame.mixer_music import set_volume, play, load, stop
 from enviroments import (MAIN_MENU_FONT, MAIN_MENU_HOVER_SOUND, 
                          MAIN_MENU_CLICK_SOUND, MAIN_MENU_THEME,
                          INTRO_VIDEO, LEBLANC_PATH, AZOTH_PATH,
-                         ARLONG_PATH, MEG_PATH, BARDOC_PATH)
+                         ARLONG_PATH, MEG_PATH, BARDOC_PATH, TEXT_FONT)
 
 
 class MainMenu():
@@ -45,8 +45,8 @@ class MainMenu():
 
         self.hide_options = False
 
-        # self.intro_text = ['A viagem foi longa', 'Já está anoitecendo', 'É melhor descansar']
-        self.intro_text = []  # versao para teste mais rapido
+        self.intro_text = ['A viagem foi longa', 'Já está anoitecendo', 'É melhor descansar']
+        # self.intro_text = []  # versao para teste mais rapido
         self.intro_alpha = 0
         self.intro_fading = True
         self.intro_speed = 2
@@ -196,6 +196,7 @@ class MainMenu():
                 self.show_panel(
                     muose_pos, 5, LEBLANC_PATH,
                     panel_id="painel1",
+                    text='Leblanc',
                     final_x=30,
                     final_y=100,
                     width=400,
@@ -212,6 +213,7 @@ class MainMenu():
                 self.show_panel(
                     muose_pos, 0, BARDOC_PATH,
                     panel_id="painel2",
+                    text='Bardoc',
                     final_x=450,
                     final_y=100,
                     width=400,
@@ -224,6 +226,7 @@ class MainMenu():
                 self.show_panel(
                     muose_pos, 1, ARLONG_PATH,
                     panel_id="painel3",
+                    text='Arlong',
                     final_x=30,
                     final_y=350,
                     width=400,
@@ -236,6 +239,7 @@ class MainMenu():
                 self.show_panel(
                     muose_pos, 2, MEG_PATH,
                     panel_id="painel4",
+                    text='Megaera',
                     final_x=450,
                     final_y=350,
                     width=400,
@@ -248,6 +252,7 @@ class MainMenu():
                 self.show_panel(
                     muose_pos, 3, AZOTH_PATH,
                     panel_id="painel5",
+                    text='Azoth',
                     final_x=240,
                     final_y=350,
                     width=400,
@@ -271,7 +276,7 @@ class MainMenu():
         # se o painel já iniciou sliding, desenha-o também aqui (ou você pode desenhar em outro lugar)
         # chamar aqui garante ordem: texto (acima) e painel (abaixo) chegando do chão
 
-    def show_panel(self, mouse_pos, maskid, char_path, panel_id, 
+    def show_panel(self, mouse_pos, maskid, char_path, panel_id, text,
                    final_x, final_y, width, height,
                start_speed=32, start_offset=0, radius=15):
         """
@@ -384,18 +389,41 @@ class MainMenu():
         overlay = Surface((width, height), SRCALPHA)
         rect(overlay, (0, 0, 0, 90), (0, 0, width, height), border_radius=radius)
 
+        x = 240
+        if final_x == 450:
+            x = 30
+            if maskid == 2:
+                x += 20
+        elif final_x == 30:
+            x = 450
+            
+
         # nome personagem
         font = Font(MAIN_MENU_FONT, 35)
-        text = "Azoth"
-
+    
         rendered = font.render(text, True, (255, 255, 255))
         text_rect = rendered.get_rect()
-        text_rect.x = final_x + 270
+        text_rect.x = self.screen.get_width() - width - x - 800
         text_rect.y = panel_y + 20
         temp = Surface(rendered.get_size(), SRCALPHA)
         temp.blit(rendered, (0, 0))
 
         temp.fill((255, 255, 255, 255), special_flags=BLEND_RGBA_MULT)
+
+        # texto de instrução
+
+        font2 = Font(TEXT_FONT, 20)
+        x2 = x
+        if x2 != 50:
+            x2 += 20
+        rendered2 = font2.render('Clique para escolher', True, (255, 255, 255))
+        text_rect2 = rendered2.get_rect()
+        text_rect2.x = self.screen.get_width() - width - x2 - 800
+        text_rect2.y = panel_y + 170
+        temp2 = Surface(rendered2.get_size(), SRCALPHA)
+        temp2.blit(rendered2, (0, 0))
+
+        temp2.fill((255, 255, 255, 255), special_flags=BLEND_RGBA_MULT)
 
         # ======================
         #       RENDER FINAL
@@ -403,6 +431,7 @@ class MainMenu():
         self.screen.blit(final_surf, (final_x, panel_y))
         self.screen.blit(overlay, (final_x, panel_y))
         self.screen.blit(temp, text_rect)
+        self.screen.blit(temp2, text_rect2)
 
         # IMAGEM DO PERSONAGEM:
         if char_path:

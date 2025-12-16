@@ -18,3 +18,6 @@ AZOTH3_PATH = ROOT / "assets" / "images" / "characters" / "azoth vermelho.png"
 BARDOC_PATH = ROOT / "assets" / "images" / "characters" / "bardoc.png"
 MEG_PATH = ROOT / "assets" / "images" / "characters" / "meg.png"
 ARLONG_PATH = ROOT / "assets" / "images" / "characters" / "arlong.png"
+
+TEXT_FONT = ROOT / "assets" / "fonts" / "morris-roman.black.ttf"
+
