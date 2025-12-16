@@ -1,3 +1,5 @@
+import pygame.image as image
+# import pygame.transform as transform
 from pygame import Surface, SRCALPHA, BLEND_RGBA_MULT, quit
 from pygame.transform import smoothscale
 from pygame.draw import rect
@@ -8,7 +10,8 @@ from video_screen import VideoScreen
 from pygame.mixer_music import set_volume, play, load, stop
 from enviroments import (MAIN_MENU_FONT, MAIN_MENU_HOVER_SOUND, 
                          MAIN_MENU_CLICK_SOUND, MAIN_MENU_THEME,
-                         INTRO_VIDEO)
+                         INTRO_VIDEO, LEBLANC_PATH, AZOTH_PATH,
+                         ARLONG_PATH, MEG_PATH, BARDOC_PATH)
 
 
 class MainMenu():
@@ -191,7 +194,7 @@ class MainMenu():
             if self.chose_slide_speed < 11:
                 # inicia o slide do painel
                 self.show_panel(
-                    muose_pos, 5,
+                    muose_pos, 5, LEBLANC_PATH,
                     panel_id="painel1",
                     final_x=30,
                     final_y=100,
@@ -207,7 +210,7 @@ class MainMenu():
             
             if self.chose_slide_speed < 10:
                 self.show_panel(
-                    muose_pos, 0,
+                    muose_pos, 0, BARDOC_PATH,
                     panel_id="painel2",
                     final_x=450,
                     final_y=100,
@@ -219,7 +222,7 @@ class MainMenu():
 
             if self.chose_slide_speed < 9:
                 self.show_panel(
-                    muose_pos, 1,
+                    muose_pos, 1, ARLONG_PATH,
                     panel_id="painel3",
                     final_x=30,
                     final_y=350,
@@ -231,7 +234,7 @@ class MainMenu():
 
             if self.chose_slide_speed < 8:
                 self.show_panel(
-                    muose_pos, 2,
+                    muose_pos, 2, MEG_PATH,
                     panel_id="painel4",
                     final_x=450,
                     final_y=350,
@@ -243,38 +246,13 @@ class MainMenu():
 
             if self.chose_slide_speed < 7:
                 self.show_panel(
-                    muose_pos, 3,
+                    muose_pos, 3, AZOTH_PATH,
                     panel_id="painel5",
-                    final_x=30,
+                    final_x=240,
                     final_y=350,
                     width=400,
                     height=200,
                     start_speed=44,
-                    start_offset=0
-                )
-
-            if self.chose_slide_speed < 6:
-                self.show_panel(
-                    muose_pos, 4,
-                    panel_id="painel6",
-                    final_x=450,
-                    final_y=350,
-                    width=400,
-                    height=200,
-                    start_speed=44,
-                    start_offset=0
-                )
-
-            if self.chose_slide_speed < 5:
-                # inicia o slide do painel
-                self.show_panel(
-                    muose_pos, 10,
-                    panel_id="painel7",
-                    final_x=890,
-                    final_y=100,
-                    width=1000,
-                    height=650,
-                    start_speed=116,
                     start_offset=0
                 )
 
@@ -293,7 +271,8 @@ class MainMenu():
         # se o painel já iniciou sliding, desenha-o também aqui (ou você pode desenhar em outro lugar)
         # chamar aqui garante ordem: texto (acima) e painel (abaixo) chegando do chão
 
-    def show_panel(self, mouse_pos, maskid, panel_id, final_x, final_y, width, height,
+    def show_panel(self, mouse_pos, maskid, char_path, panel_id, 
+                   final_x, final_y, width, height,
                start_speed=32, start_offset=0, radius=15):
         """
         Painel com animação 'liquid glass' vindo de fora da tela (por baixo).
@@ -356,7 +335,9 @@ class MainMenu():
             return
 
         try:
-            background_area = self.screen.subsurface((vis_x, vis_y, width, vis_h)).copy().convert_alpha()
+            background_area = self.screen.subsurface(
+                (vis_x, vis_y, width, vis_h)
+            ).copy().convert_alpha()
         except ValueError:
             return
 
@@ -379,7 +360,9 @@ class MainMenu():
         blurred = background_area
         for _ in range(4):
             small = smoothscale(
-                blurred, (max(1, int(width * scale)), max(1, int(height * scale)))
+                blurred, (
+                    max(1, int(width * scale)), max(1, int(height * scale))
+                )
             )
             blurred = smoothscale(small, (width, height)).convert_alpha()
 
@@ -388,7 +371,10 @@ class MainMenu():
         # ======================
         mask = Surface((width, height), SRCALPHA)
         mask.fill((0, 0, 0, 0))
-        rect(mask, (126, 126, 126, 255), (0, 0, width, height), border_radius=radius)
+        rect(
+            mask, (126, 126, 126, 255), (0, 0, width, height), 
+            border_radius=radius
+        )
 
         final_surf = Surface((width, height), SRCALPHA)
         final_surf.blit(blurred, (0, 0))
@@ -398,20 +384,57 @@ class MainMenu():
         overlay = Surface((width, height), SRCALPHA)
         rect(overlay, (0, 0, 0, 90), (0, 0, width, height), border_radius=radius)
 
+        # nome personagem
+        font = Font(MAIN_MENU_FONT, 35)
+        text = "Azoth"
+
+        rendered = font.render(text, True, (255, 255, 255))
+        text_rect = rendered.get_rect()
+        text_rect.x = final_x + 270
+        text_rect.y = panel_y + 20
+        temp = Surface(rendered.get_size(), SRCALPHA)
+        temp.blit(rendered, (0, 0))
+
+        temp.fill((255, 255, 255, 255), special_flags=BLEND_RGBA_MULT)
+
         # ======================
         #       RENDER FINAL
         # ======================
         self.screen.blit(final_surf, (final_x, panel_y))
         self.screen.blit(overlay, (final_x, panel_y))
+        self.screen.blit(temp, text_rect)
+
+        # IMAGEM DO PERSONAGEM:
+        if char_path:
+            char_image = image.load(char_path)
+            # scaled_image = transform.scale(char_image, (220, 197))
+            self.screen.blit(char_image, (final_x, panel_y))
 
         option_rect = Rect(final_x, panel_y, width, height)
         is_hover = option_rect.collidepoint(mouse_pos)
         
         # som do hover
         if maskid < 6:
-            if is_hover and not self.already_hover[maskid]:
-                self.hover_sound.play()
-                self.already_hover[maskid] = True
+            if is_hover:
+                # borda
+                rect(
+                    self.screen,
+                    (239, 153, 34, 160),
+                    (final_x, panel_y, width, height),
+                    width=3,
+                    border_radius=radius
+                )
+                self.draw_panel(
+                    width=1000,
+                    height=650,
+                    panel_x=890,
+                    panel_y=150,
+                    color=(126, 126, 126, 255)
+                )
+
+                if not self.already_hover[maskid]:
+                    self.hover_sound.play()
+                    self.already_hover[maskid] = True 
             
             if not is_hover and self.already_hover[maskid]:
                 self.already_hover[maskid] = False
@@ -420,13 +443,13 @@ class MainMenu():
         
 
         # borda
-        rect(
-            self.screen,
-            (239, 153, 34, 255),
-            (final_x, panel_y, width, height),
-            width=3,
-            border_radius=radius
-        )
+        # rect(
+        #     self.screen,
+        #     (239, 153, 34, 255),
+        #     (final_x, panel_y, width, height),
+        #     width=3,
+        #     border_radius=radius
+        # )
 
 
 
@@ -474,15 +497,16 @@ class MainMenu():
             else:
                 stop()
 
-    def draw_panel(self):
-        width = 400
-        height = 260
-        panel_x = 30
-        panel_y = self.screen.get_height() - height - 30
+    def draw_panel(self, width=400, height=260, panel_x=30, panel_y=30,
+                   color=(127, 15, 14, 235)):
+        panel_y = self.screen.get_height() - height - panel_y
 
         # 1) captura e garante per-pixel alpha
-        background_area = self.screen.subsurface((panel_x, panel_y, width, height)).copy()
-        background_area = background_area.convert_alpha()  # garante alpha por pixel
+        background_area = self.screen.subsurface(
+            (panel_x, panel_y, width, height)
+            ).copy() 
+        # garante alpha por pixel
+        background_area = background_area.convert_alpha()
 
         # 2) blur multi-pass
         scale = 0.25
@@ -495,7 +519,7 @@ class MainMenu():
         radius = 15
         mask = Surface((width, height), SRCALPHA)
         mask.fill((0, 0, 0, 0))
-        rect(mask, (127, 15, 14, 235), (0, 0, width, height), border_radius=radius)
+        rect(mask, color, (0, 0, width, height), border_radius=radius)
 
         # 4) cria surface final com alpha, blita o blur e aplica a máscara com MULT
         final = Surface((width, height), SRCALPHA)
